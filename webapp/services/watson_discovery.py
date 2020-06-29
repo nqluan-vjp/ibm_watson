@@ -56,3 +56,31 @@ def trending_news ():
     except ApiException as ex:
         print ("Method failed with status code " + str(ex.code) + ": " + ex.message) 
     
+def search_news_tesla (): 
+    data_search = []
+    obj = {}
+    max_count = 10
+    try:
+        discovery = get_discovery()
+        system_environment_id = get_environments()
+        query ='(title:"テスラ",text:"電気自動車",text:"EV")'
+        return_fields = 'id,text,title,enriched_text.relations,publication_date'
+        data = discovery.query(system_environment_id, 'news-ja',query = query)
+        query_length = round(data.result['matching_results']/max_count)
+        i = 0
+        while i < query_length :
+            if i == 0:
+                data = discovery.query(system_environment_id, 'news-ja',query = query ,count = max_count ,return_=return_fields)
+                obj = {'data' : data.result['results']}
+                data_search.append(obj)
+                i+=1
+            else :
+                data = discovery.query(system_environment_id, 'news-ja',query = query ,
+                                       count = max_count ,return_=return_fields,offset = len(data_search))
+                obj = {'data' : data.result['results']}
+                data_search.append(obj)
+                i+=1      
+        return data_search
+    except ApiException as ex:
+        print ("Method failed with status code " + str(ex.code) + ": " + ex.message) 
+          
