@@ -55,10 +55,11 @@ def trending_news ():
         return data
     except ApiException as ex:
         print ("Method failed with status code " + str(ex.code) + ": " + ex.message) 
-    
+        
 def search_news_tesla (): 
     data_search = []
     obj = {}
+    offset = 0;
     max_count = 10
     try:
         discovery = get_discovery()
@@ -66,21 +67,24 @@ def search_news_tesla ():
         query ='(title:"テスラ",text:"電気自動車",text:"EV")'
         return_fields = 'id,text,title,enriched_text.relations,publication_date'
         data = discovery.query(system_environment_id, 'news-ja',query = query)
+        result_match= data.result['matching_results']
         query_length = round(data.result['matching_results']/max_count)
         i = 0
-        while i < query_length :
+        while i <= query_length :
             if i == 0:
-                data = discovery.query(system_environment_id, 'news-ja',query = query ,count = max_count ,return_=return_fields)
+                data = discovery.query(system_environment_id, 'news-ja',query = query ,count = max_count ,return_=return_fields,offset = offset)
                 obj = {'data' : data.result['results']}
                 data_search.append(obj)
+                offset+=max_count
                 i+=1
             else :
-                data = discovery.query(system_environment_id, 'news-ja',query = query ,
-                                       count = max_count ,return_=return_fields,offset = len(data_search))
+                data = discovery.query(system_environment_id, 'news-ja',query = query ,  count = max_count ,return_=return_fields, offset = offset)                          
+                offset+=max_count
                 obj = {'data' : data.result['results']}
                 data_search.append(obj)
                 i+=1      
-        return data_search
+        return data_search,result_match
     except ApiException as ex:
         print ("Method failed with status code " + str(ex.code) + ": " + ex.message) 
-          
+           
+    

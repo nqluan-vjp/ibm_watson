@@ -30,16 +30,16 @@ def trending_topic(request):
     return render(request, 'webapp/trending.html',{'data' : data.result['results']})
 
 def export_csv(request):
-    data = watson_discovery.search_news_tesla()
-    write_csv_file(data)
+    data,matching_results = watson_discovery.search_news_tesla()
+    write_csv_file(data,matching_results)
     with open(CSV_FOLDER + '/' + 'data.csv',encoding="utf-8_sig" ,newline='') as myfile:
         response = HttpResponse(myfile, content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename=data.csv'
     return response
  
-def write_csv_file(data):
+def write_csv_file(data,matching_results):
     with open(CSV_FOLDER + '/' + 'data.csv', mode='w' ,encoding="utf-8_sig" ,newline='') as csv_file:
-        fieldnames = ['id', 'publication_date', 'text' , 'title','enriched_text.relations.type',
+        fieldnames = ['matching_results','id', 'publication_date', 'text' , 'title','enriched_text.relations.type',
                       'enriched_text.relations.sentence',
                       'enriched_text.relations.score',
                       'enriched_text.relations.arguments.0.location.0',
@@ -55,18 +55,19 @@ def write_csv_file(data):
         writer.writeheader()
         for obj in data:
             for item in obj['data']:
-                for relation in item['enriched_text']['relations']:
-                    writer.writerow({'id': item['id'], 'publication_date': item['publication_date'], 'text': item['text'] , 'title' : item['title'],
-                                     'enriched_text.relations.type' : relation['type'],
-                                     'enriched_text.relations.sentence' :relation['sentence'],
-                                     'enriched_text.relations.score' : relation['score'] ,
-                                     'enriched_text.relations.arguments.0.location.0' : relation['arguments'][0]['location'][0],
-                                     'enriched_text.relations.arguments.0.location.0' : relation['arguments'][0]['location'][1],
-                                     'enriched_text.relations.arguments.0.entities.type' : relation['arguments'][0]['entities'][0]['type'],
-                                     'enriched_text.relations.arguments.0.entities.text' : relation['arguments'][0]['entities'][0]['text'] ,
-                                     'enriched_text.relations.arguments.1.location.0' : relation['arguments'][1]['location'][0] ,
-                                     'enriched_text.relations.arguments.1.location.1' : relation['arguments'][1]['location'][1] ,
-                                     'enriched_text.relations.arguments.1.entities.type' : relation['arguments'][1]['entities'][0]['type'],
-                                     'enriched_text.relations.arguments.1.entities.text' : relation['arguments'][1]['entities'][0]['text']})
-        
+                if 'enriched_text' in item and 'relations' in item['enriched_text']:
+                    for relation in item['enriched_text']['relations']:
+                        writer.writerow({'matching_results' :matching_results ,'id': item['id'], 'publication_date': item['publication_date'], 'text': item['text'] , 'title' : item['title'],
+                                         'enriched_text.relations.type' : relation['type'],
+                                         'enriched_text.relations.sentence' :relation['sentence'],
+                                         'enriched_text.relations.score' : relation['score'] ,
+                                         'enriched_text.relations.arguments.0.location.0' : relation['arguments'][0]['location'][0],
+                                         'enriched_text.relations.arguments.0.location.0' : relation['arguments'][0]['location'][1],
+                                         'enriched_text.relations.arguments.0.entities.type' : relation['arguments'][0]['entities'][0]['type'],
+                                         'enriched_text.relations.arguments.0.entities.text' : relation['arguments'][0]['entities'][0]['text'] ,
+                                         'enriched_text.relations.arguments.1.location.0' : relation['arguments'][1]['location'][0] ,
+                                         'enriched_text.relations.arguments.1.location.1' : relation['arguments'][1]['location'][1] ,
+                                         'enriched_text.relations.arguments.1.entities.type' : relation['arguments'][1]['entities'][0]['type'],
+                                         'enriched_text.relations.arguments.1.entities.text' : relation['arguments'][1]['entities'][0]['text']})
+            
     
