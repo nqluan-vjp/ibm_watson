@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from webapp.services import watson_discovery
+from webapp.utils import convert_csv_to_json
 import csv
 import os 
 from django.http import HttpResponse
@@ -13,7 +14,6 @@ def search_data(request):
     if request.method == 'GET':
         return render(request, 'webapp/search.html' ,{'collections': collections} )
     if request.method == 'POST':
-        print(request.POST["language"])
         language = request.POST["language"]
         if language == "Language":
             language = 'news-ja' 
@@ -23,11 +23,13 @@ def search_data(request):
                        {'data' : data.result['results'] ,
                         'collections': collections ,
                         'language' : language ,
-                        'search' : search})
+                        'search' : search ,
+                        'matching_results' : data.result['matching_results']})
 
 def trending_topic(request):
     data = watson_discovery.trending_news()
     return render(request, 'webapp/trending.html',{'data' : data.result['results']})
+
 
 def export_csv(request):
     data,matching_results = watson_discovery.search_news_tesla()
@@ -36,7 +38,18 @@ def export_csv(request):
         response = HttpResponse(myfile, content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename=data.csv'
     return response
- 
+
+
+def export_csv_news(request):
+    data,matching_results = watson_discovery.search_news_to_csv(request.POST["search"])
+    write_csv_file(data,matching_results)
+    with open(CSV_FOLDER + '/' + 'data.csv',encoding="utf-8_sig" ,newline='') as myfile:
+        response = HttpResponse(myfile, content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename=data.csv'
+    return response
+
+
+
 def write_csv_file(data,matching_results):
     with open(CSV_FOLDER + '/' + 'data.csv', mode='w' ,encoding="utf-8_sig" ,newline='') as csv_file:
         fieldnames = ['matching_results','id', 'publication_date', 'text' , 'title','enriched_text.relations.type',
@@ -69,5 +82,15 @@ def write_csv_file(data,matching_results):
                                          'enriched_text.relations.arguments.1.location.1' : relation['arguments'][1]['location'][1] ,
                                          'enriched_text.relations.arguments.1.entities.type' : relation['arguments'][1]['entities'][0]['type'],
                                          'enriched_text.relations.arguments.1.entities.text' : relation['arguments'][1]['entities'][0]['text']})
+                        
+
+def convert_csv(request):
+    convert_csv_to_json()
+    with open(CSV_FOLDER + '/' + 'data.json',encoding="utf-8_sig" ,newline='') as myfile:
+        response = HttpResponse(myfile, content_type='text/json')
+        response['Content-Disposition'] = 'attachment; filename=data.json'
+    return response
+
+                        
             
     
